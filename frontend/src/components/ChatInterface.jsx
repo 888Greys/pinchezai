@@ -135,6 +135,12 @@ const ChatInterface = () => {
 
     // Modal states
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+    // Auto-close sidebar on navigation
+    useEffect(() => {
+        setIsSidebarOpen(false);
+    }, [user]);
 
     const scrollToBottom = useCallback(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -432,27 +438,36 @@ const ChatInterface = () => {
         // Normalize content: Ensure markdown elements (headers, lists) start on new lines
         // only if preceded by sentence-ending punctuation or blank lines.
         let normalizedContent = content
-            // Ensure space after hash symbols if missing (e.g. "####Header" -> "#### Header")
+            // Ensure space after hash symbols
             .replace(/^(#+)([A-Za-z0-9])/gm, '$1 $2')
 
-            // Ensure double newline before headers (unless at absolute start)
+            // Ensure double newline before headers
             .replace(/([^\n])\n*(#{1,6}\s+)/g, '$1\n\n$2')
 
-            // Fix mission spaces after periods, exclamation marks, or question marks followed by a capital letter
+            // Fix missing spaces after sentence boundaries (sentence-ending punctuation followed by Capital)
             .replace(/([.!?])([A-Z])/g, '$1 $2')
 
-            // Fix word joining (e.g. "RegulationsAccording")
-            .replace(/([a-z])([A-Z][a-z]+)/g, '$1 $2')
+            // Fix word joining in sentences (e.g. "ExamsSpecial")
+            .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
 
-            // Force newline after headers if body text is glued (e.g. "#### Header Body")
+            // AGGRESSIVE LIST SPLITTING:
+            // Fix words/parentheses joined to numbered items (e.g. "family2.", ")3.", "Item1.")
+            .replace(/([a-zA-Z\)])(\d+\.\s?)/g, '$1\n$2')
+
+            // Fix word joined to uppercase after list item (e.g. "defaultersO")
+            .replace(/([a-z])([A-Z])/g, '$1 $2')
+
+            // Force newline after headers if body text is glued
             .replace(/^(#{1,6}\s+.+?)(?=\s+(?:To|According|If|The|Please|You|Note|A|An|In|On|For))/gm, '$1\n\n')
 
-            // Strip isolated trailing hashes or hash-only lines that might be artifacts
+            // Strip isolated trailing hashes
             .replace(/^\s*#{1,6}\s*$/gm, '')
 
-            // Force newline before lists if preceded by punctuation (.,:!?)
-            // Avoids breaking "5 * 5" or "contact * Clive" but splits "List:- Item"
-            .replace(/([.:!?])\s*([-*•]\s)/g, '$1\n$2');
+            // Force newline before bullet points
+            .replace(/([.:!?])\s*([-*•]\s)/g, '$1\n$2')
+
+            // Force newline before numbered lists (secondary check)
+            .replace(/([.:!?])\s*(\d+\.\s)/g, '$1\n$2');
 
         // Split by lines to handle single newline formatting
         const lines = normalizedContent.split('\n');
@@ -618,21 +633,37 @@ const ChatInterface = () => {
 
 
     return (
-        <div className={`flex h-screen bg-bg-primary transition-colors duration-300 ${isPremium ? 'premium-glow' : ''}`}>
-            {/* Left Sidebar */}
+        <div className="flex h-screen bg-bg-primary overflow-hidden relative">
             <Sidebar
-                onNewChat={handleNewChat}
-                onOpenHistory={() => setIsHistoryOpen(true)}
-                onSaveChat={handleSaveChat}
+                onNewChat={() => {
+                    handleNewChat();
+                    setIsSidebarOpen(false);
+                }}
+                onOpenHistory={() => {
+                    setIsHistoryOpen(true);
+                    setIsSidebarOpen(false);
+                }}
+                onSaveChat={() => {
+                    handleSaveChat();
+                    setIsSidebarOpen(false);
+                }}
+                isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
             />
-
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col h-full overflow-hidden md:ml-0">
+            <div className="flex-1 flex flex-col h-full overflow-hidden w-full">
                 {/* Header */}
-                <div className="sticky top-0 z-10 bg-bg-primary/80 backdrop-blur-md p-4 flex items-center justify-between border-b border-border-primary/50">
-                    <div className="flex items-center gap-3">
-                        <img src={kcaLogo} alt="KCA Logo" className="w-8 h-8 object-contain" />
-                        <span className={`font-bold ${isPremium ? 'premium-gradient-text' : 'text-text-primary'}`}>KCA Connect AI</span>
+                <div className="sticky top-0 z-10 bg-bg-primary/80 backdrop-blur-md p-3 md:p-4 flex items-center justify-between border-b border-border-primary/50">
+                    <div className="flex items-center gap-2 md:gap-3">
+                        <button
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="md:hidden p-2 rounded-lg hover:bg-bg-secondary text-text-primary transition-colors"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+                        <img src={kcaLogo} alt="KCA Logo" className="w-6 h-6 md:w-8 md:h-8 object-contain" />
+                        <span className={`font-bold text-sm md:text-base ${isPremium ? 'premium-gradient-text' : 'text-text-primary'}`}>KCA Connect AI</span>
                     </div>
                 </div>
 

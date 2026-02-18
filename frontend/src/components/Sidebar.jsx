@@ -4,19 +4,20 @@ import { useTheme } from '../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import ProfileModal from './ProfileModal';
 
-const Sidebar = ({ onNewChat, onOpenHistory, onSaveChat }) => {
+const Sidebar = ({ onNewChat, onOpenHistory, onSaveChat, isOpen, onClose }) => {
     const { user, signOut } = useAuth();
     const { theme, setTheme } = useTheme();
     const navigate = useNavigate();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-    // Auto-collapse on mobile
+    // Auto-collapse on desktop if screen is small, but on mobile we use isOpen prop
     useEffect(() => {
         const handleResize = () => {
-            if (window.innerWidth < 768) {
+            if (window.innerWidth >= 768 && window.innerWidth < 1024) {
                 setIsCollapsed(true);
+            } else if (window.innerWidth >= 1024) {
+                setIsCollapsed(false);
             }
         };
         handleResize();
@@ -41,29 +42,15 @@ const Sidebar = ({ onNewChat, onOpenHistory, onSaveChat }) => {
 
     return (
         <>
-            {/* Mobile Toggle Button */}
-            <button
-                onClick={() => setIsMobileOpen(!isMobileOpen)}
-                className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-bg-secondary shadow-lg"
-            >
-                <svg className="w-6 h-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    {isMobileOpen ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                    )}
-                </svg>
-            </button>
-
             {/* Overlay for mobile */}
-            {isMobileOpen && (
+            {isOpen && (
                 <div
-                    className="md:hidden fixed inset-0 bg-black/50 z-30"
-                    onClick={() => setIsMobileOpen(false)}
+                    className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-30 transition-opacity duration-300"
+                    onClick={onClose}
                 />
             )}
 
-            <div className={`${isCollapsed ? 'w-16 md:w-20' : 'w-64'} ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 bg-bg-secondary border-r border-border-primary flex flex-col transition-all duration-300 h-full fixed md:relative z-40`}>
+            <div className={`${isCollapsed ? 'w-16 md:w-20' : 'w-64'} ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 bg-bg-secondary border-r border-border-primary flex flex-col transition-transform md:transition-all duration-300 h-full fixed md:relative z-40`}>
                 {/* Collapse/Expand Toggle (Subtle) */}
                 <div className="p-2 flex justify-end">
                     <button

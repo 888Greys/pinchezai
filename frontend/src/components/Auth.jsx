@@ -66,32 +66,30 @@ const Auth = () => {
             {/* Background Radial Glow */}
             <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none -z-0 opacity-20 bg-radial-glow`} />
 
-            {/* Logo link back to landing */}
-            <div
-                className="absolute top-8 left-8 flex items-center gap-2 cursor-pointer z-20"
-                onClick={() => navigate('/')}
-            >
-                <img src={kcaLogo} alt="KCA University Logo" className="w-10 h-10 object-contain rounded-full border-2 border-border-primary" />
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg ${isPremium ? 'premium-gradient-bg' : 'bg-blue-600'}`} style={{ display: 'none' }}>
-                    K
+            {/* Top Navigation Bar */}
+            <div className="fixed top-0 left-0 right-0 p-4 md:p-8 flex items-center justify-between z-20 pointer-events-none">
+                <div
+                    className="flex items-center gap-2 cursor-pointer pointer-events-auto"
+                    onClick={() => navigate('/')}
+                >
+                    <img src={kcaLogo} alt="KCA University Logo" className="w-8 h-8 md:w-10 md:h-10 object-contain rounded-full border-2 border-border-primary" />
+                    <span className={`text-lg md:text-xl font-bold tracking-tight ${isPremium ? 'premium-gradient-text' : ''}`}>
+                        KCA Connect AI
+                    </span>
                 </div>
-                <span className={`text-xl font-bold tracking-tight ${isPremium ? 'premium-gradient-text' : ''}`}>
-                    KCA Connect AI
-                </span>
+
+                <button
+                    onClick={() => navigate('/')}
+                    className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-lg bg-bg-secondary/50 backdrop-blur-md border border-border-primary text-text-primary hover:bg-bg-secondary transition-colors pointer-events-auto"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    <span className="text-xs md:text-sm font-medium">Back</span>
+                </button>
             </div>
 
-            {/* Back Button - Navigate to landing page */}
-            <button
-                onClick={() => navigate('/')}
-                className="absolute top-8 right-8 flex items-center gap-2 px-4 py-2 rounded-lg bg-bg-secondary/50 border border-border-primary text-text-primary hover:bg-bg-secondary transition-colors z-20"
-            >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                <span className="text-sm font-medium">Back</span>
-            </button>
-
-            <div className={`max-w-md w-full bg-bg-secondary/40 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-border-primary z-10 relative animate-fadeIn ${isPremium ? 'premium-glow' : ''}`}>
+            <div className={`max-w-md w-full bg-bg-secondary/40 backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-2xl border border-border-primary z-10 relative animate-fadeIn mt-16 md:mt-0 ${isPremium ? 'premium-glow' : ''}`}>
                 {/* Tabs */}
                 <div className="flex p-1 bg-bg-primary/50 rounded-2xl mb-8 border border-border-primary">
                     <button
@@ -165,9 +163,9 @@ const Auth = () => {
                     </div>
 
                     {activeTab === 'signup' && (
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                            <label className="block text-xs font-bold uppercase tracking-widest text-text-secondary mb-2 ml-1">Role</label>
+                                <label className="block text-xs font-bold uppercase tracking-widest text-text-secondary mb-2 ml-1">Role</label>
                                 <select
                                     value={role}
                                     onChange={(e) => setRole(e.target.value)}

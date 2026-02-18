@@ -19,7 +19,7 @@ const ChatHistoryModal = ({ isOpen, onClose, onLoadChat }) => {
         if (!searchQuery.trim()) return true;
         const query = searchQuery.toLowerCase();
         const titleMatch = chat.title?.toLowerCase().includes(query);
-        const messageMatch = chat.messages?.some(msg => 
+        const messageMatch = chat.messages?.some(msg =>
             msg.content?.toLowerCase().includes(query)
         );
         return titleMatch || messageMatch;
@@ -31,7 +31,7 @@ const ChatHistoryModal = ({ isOpen, onClose, onLoadChat }) => {
             fetchChats();
         }
     }, [isOpen, session]);
-    
+
     // Focus search input when modal opens
     useEffect(() => {
         if (isOpen) {
@@ -65,7 +65,7 @@ const ChatHistoryModal = ({ isOpen, onClose, onLoadChat }) => {
     const handleDeleteChat = async (chatId, e) => {
         e.stopPropagation();
         if (!window.confirm("Are you sure you want to delete this chat?")) return;
-        
+
         setDeletingId(chatId);
         try {
             const success = await deleteChat(session.access_token, chatId);
@@ -84,7 +84,7 @@ const ChatHistoryModal = ({ isOpen, onClose, onLoadChat }) => {
         try {
             const result = await toggleSaveChat(session.access_token, chatId);
             if (result) {
-                setChats(prev => prev.map(chat => 
+                setChats(prev => prev.map(chat =>
                     chat.id === chatId ? { ...chat, is_saved: result.is_saved } : chat
                 ));
             }
@@ -121,13 +121,13 @@ const ChatHistoryModal = ({ isOpen, onClose, onLoadChat }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             {/* Backdrop */}
-            <div 
+            <div
                 className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                 onClick={onClose}
             />
 
-            {/* Modal */}
-            <div className={`relative w-full max-w-2xl max-h-[80vh] rounded-2xl shadow-2xl overflow-hidden ${isPremium ? 'bg-[#171717]' : 'bg-bg-secondary'}`}>
+            {/* Modal Container */}
+            <div className={`relative w-full h-full sm:h-auto sm:max-w-2xl sm:max-h-[80vh] flex flex-col sm:rounded-2xl shadow-2xl overflow-hidden ${isPremium ? 'bg-[#171717]' : 'bg-bg-secondary'}`}>
                 {/* Header */}
                 <div className={`flex flex-col gap-3 p-4 border-b border-border-primary ${isPremium ? 'bg-black/20' : 'bg-bg-primary/50'}`}>
                     <div className="flex items-center justify-between">
@@ -143,7 +143,7 @@ const ChatHistoryModal = ({ isOpen, onClose, onLoadChat }) => {
                             </svg>
                         </button>
                     </div>
-                    
+
                     {/* Search Input */}
                     <div className="relative">
                         <svg className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${isPremium ? 'text-white/50' : 'text-text-secondary'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,7 +227,7 @@ const ChatHistoryModal = ({ isOpen, onClose, onLoadChat }) => {
                                                 {chat.messages?.length || 0} messages • {formatDate(chat.updated_at)}
                                             </p>
                                         </div>
-                                        
+
                                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
                                                 onClick={(e) => handleToggleSave(chat.id, e)}

@@ -198,8 +198,8 @@ const ProfileModal = ({ isOpen, onClose, onAvatarUpdate }) => {
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      {/* Modal */}
-      <div className="relative z-10 w-full max-w-2xl mx-4 rounded-2xl bg-bg-secondary border border-border-primary shadow-2xl animate-fadeIn">
+      {/* Modal Container */}
+      <div className="relative z-10 w-full h-full sm:h-auto sm:max-w-2xl sm:mx-4 flex flex-col bg-bg-secondary sm:rounded-2xl border-x sm:border border-border-primary shadow-2xl animate-fadeIn overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border-primary">
           <h2 className="text-lg font-semibold text-text-primary">My Profile</h2>
@@ -215,7 +215,7 @@ const ProfileModal = ({ isOpen, onClose, onAvatarUpdate }) => {
         </div>
 
         {/* Body */}
-        <div className="p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 scrollbar-thin">
           {/* Error/Success Messages */}
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">

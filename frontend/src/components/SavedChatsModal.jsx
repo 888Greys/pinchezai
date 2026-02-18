@@ -35,7 +35,7 @@ const SavedChatsModal = ({ isOpen, onClose, onLoadChat }) => {
     const handleDeleteChat = async (chatId, e) => {
         e.stopPropagation();
         if (!window.confirm("Are you sure you want to delete this saved chat?")) return;
-        
+
         setDeletingId(chatId);
         try {
             const success = await deleteChat(session.access_token, chatId);
@@ -84,8 +84,8 @@ const SavedChatsModal = ({ isOpen, onClose, onLoadChat }) => {
         // Find the last assistant message for preview
         const lastAssistant = [...messages].reverse().find(m => m.role === 'assistant');
         if (lastAssistant) {
-            return lastAssistant.content.length > 100 
-                ? lastAssistant.content.substring(0, 100) + "..." 
+            return lastAssistant.content.length > 100
+                ? lastAssistant.content.substring(0, 100) + "..."
                 : lastAssistant.content;
         }
         return "Chat with messages";
@@ -96,13 +96,13 @@ const SavedChatsModal = ({ isOpen, onClose, onLoadChat }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             {/* Backdrop */}
-            <div 
+            <div
                 className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                 onClick={onClose}
             />
 
-            {/* Modal */}
-            <div className={`relative w-full max-w-2xl max-h-[80vh] rounded-2xl shadow-2xl overflow-hidden ${isPremium ? 'premium-gradient-bg' : 'bg-bg-secondary'}`}>
+            {/* Modal Container */}
+            <div className={`relative w-full h-full sm:h-auto sm:max-w-2xl sm:max-h-[80vh] flex flex-col sm:rounded-2xl shadow-2xl overflow-hidden ${isPremium ? 'premium-gradient-bg' : 'bg-bg-secondary'}`}>
                 {/* Header */}
                 <div className={`flex items-center justify-between p-4 border-b border-border-primary ${isPremium ? 'bg-black/20' : 'bg-bg-primary/50'}`}>
                     <div className="flex items-center gap-3">
@@ -183,7 +183,7 @@ const SavedChatsModal = ({ isOpen, onClose, onLoadChat }) => {
                                                 </span>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
                                                 onClick={(e) => handleToggleSave(chat.id, chat.is_saved, e)}
