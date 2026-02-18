@@ -465,6 +465,7 @@ def get_system_health(admin=Depends(get_admin_user)):
 
 # ============ User Management Endpoints ============
 
+
 @router.get("/users")
 def get_all_users(admin=Depends(get_admin_user), limit: int = 50, offset: int = 0):
     """
@@ -575,7 +576,7 @@ def make_user_admin(user_id: str, admin=Depends(get_admin_user)):
         # Update user
         service.auth.admin.update_user_by_id(
             user_id,
-            {"data": current_metadata}
+            {"user_metadata": current_metadata}
         )
         
         return {"success": True, "message": f"User {user_id} is now an admin"}
@@ -603,7 +604,7 @@ def remove_user_admin(user_id: str, admin=Depends(get_admin_user)):
         # Update user
         service.auth.admin.update_user_by_id(
             user_id,
-            {"data": current_metadata}
+            {"user_metadata": current_metadata}
         )
         
         return {"success": True, "message": f"Admin privileges removed from user {user_id}"}
@@ -649,7 +650,7 @@ def update_user(user_id: str, request: UpdateUserRequest, admin=Depends(get_admi
         for key, value in updates.items():
             metadata[key] = value
 
-        service.auth.admin.update_user_by_id(user_id, {"data": metadata})
+        service.auth.admin.update_user_by_id(user_id, {"user_metadata": metadata})
 
         return {"success": True, "message": "User updated successfully"}
     except HTTPException:

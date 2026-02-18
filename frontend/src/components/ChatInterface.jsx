@@ -432,17 +432,27 @@ const ChatInterface = () => {
         // Normalize content: Ensure markdown elements (headers, lists) start on new lines
         // only if preceded by sentence-ending punctuation or blank lines.
         let normalizedContent = content
-            // Force newline before headers if preceded by punctuation (.,:!?) or blank line
-            // Avoids breaking "Hash #1" but splits "Title.#### Header"
-            .replace(/([.:!?])\s*(#{1,6}\s)/g, '$1\n\n$2')
+            // Ensure space after hash symbols if missing (e.g. "####Header" -> "#### Header")
+            .replace(/^(#+)([A-Za-z0-9])/gm, '$1 $2')
+
+            // Ensure double newline before headers (unless at absolute start)
+            .replace(/([^\n])\n*(#{1,6}\s+)/g, '$1\n\n$2')
+
+            // Fix mission spaces after periods, exclamation marks, or question marks followed by a capital letter
+            .replace(/([.!?])([A-Z])/g, '$1 $2')
+
+            // Fix word joining (e.g. "RegulationsAccording")
+            .replace(/([a-z])([A-Z][a-z]+)/g, '$1 $2')
+
+            // Force newline after headers if body text is glued (e.g. "#### Header Body")
+            .replace(/^(#{1,6}\s+.+?)(?=\s+(?:To|According|If|The|Please|You|Note|A|An|In|On|For))/gm, '$1\n\n')
+
+            // Strip isolated trailing hashes or hash-only lines that might be artifacts
+            .replace(/^\s*#{1,6}\s*$/gm, '')
 
             // Force newline before lists if preceded by punctuation (.,:!?)
             // Avoids breaking "5 * 5" or "contact * Clive" but splits "List:- Item"
-            .replace(/([.:!?])\s*([-*•]\s)/g, '$1\n$2')
-
-            // Numbered lists are trickier (e.g. "version 2.0" vs "1. Item")
-            // Require punctuation before number as well.
-            .replace(/([.:!?])\s*(\d+\.\s)/g, '$1\n$2');
+            .replace(/([.:!?])\s*([-*•]\s)/g, '$1\n$2');
 
         // Split by lines to handle single newline formatting
         const lines = normalizedContent.split('\n');
@@ -533,9 +543,9 @@ const ChatInterface = () => {
                 continue;
             }
 
-            // HEADINGS
-            const headingMatch = line.match(/^(#{1,6})\s+(.+)/);
-            if (headingMatch) {
+            // HEADINGS - highly resilient match (optional space to catch artifacts)
+            const headingMatch = line.trim().match(/^(#{1,6})\s*(.*)$/);
+            if (headingMatch && headingMatch[2]) {
                 flushParagraph();
                 flushList();
                 const level = headingMatch[1].length;
@@ -577,8 +587,9 @@ const ChatInterface = () => {
             }
 
             // If we are here, it's a regular line.
-            // If it's empty, flush everything.
-            if (!line.trim()) {
+            // Extra safety: strip hashes from start of paragraph lines if they survived normalization
+            const sanitizedLine = line.replace(/^\s*#{1,6}\s*/, '');
+            if (!sanitizedLine.trim()) {
                 flushParagraph();
                 flushList();
                 continue;
@@ -586,7 +597,7 @@ const ChatInterface = () => {
 
             // Otherwise, add to current paragraph
             flushList(); // Lists break paragraphs
-            currentParagraph.push(line);
+            currentParagraph.push(sanitizedLine);
         }
 
         // Flush remaining buffers at end
@@ -618,51 +629,54 @@ const ChatInterface = () => {
             {/* Main Content */}
             <div className="flex-1 flex flex-col h-full overflow-hidden md:ml-0">
                 {/* Header */}
-                <div className={`bg-bg-secondary/80 backdrop-blur-md shadow-sm border-b border-border-primary p-4 z-10 flex-shrink-0`}>
-                    <div className="flex items-center gap-3 md:ml-0 ml-12">
-                        <img src={kcaLogo} alt="KCA University Logo" className="w-10 h-10 object-contain rounded-full border-2 border-border-primary" />
-                        <div>
-                            <h1 className={`text-xl font-bold ${isPremium ? 'premium-gradient-text' : 'bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent'}`}>
-                                KCA Connect AI
-                            </h1>
-                            <p className={`text-sm text-text-secondary`}>Your intelligent university assistant</p>
-                        </div>
+                <div className="sticky top-0 z-10 bg-bg-primary/80 backdrop-blur-md p-4 flex items-center justify-between border-b border-border-primary/50">
+                    <div className="flex items-center gap-3">
+                        <img src={kcaLogo} alt="KCA Logo" className="w-8 h-8 object-contain" />
+                        <span className={`font-bold ${isPremium ? 'premium-gradient-text' : 'text-text-primary'}`}>KCA Connect AI</span>
                     </div>
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto px-4 py-6 w-full scrollbar-thin scrollbar-thumb-accent-primary scrollbar-track-transparent">
-                    <div className="max-w-4xl mx-auto space-y-4">
+                <div className="flex-1 overflow-y-auto px-4 py-8 w-full scrollbar-thin">
+                    <div className="max-w-3xl mx-auto space-y-8">
                         {messages.map((msg, index) => (
                             <div
                                 key={index}
-                                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fadeIn`}
+                                className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"} animate-fadeIn group`}
                             >
-                                <div
-                                    className={`group max-w-[85%] ${msg.role === "user"
-                                        ? (isPremium ? 'premium-gradient-bg text-white' : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white') + " rounded-2xl rounded-br-md"
-                                        : msg.isSystem
-                                            ? "bg-bg-secondary/80 border border-accent-primary/30 text-text-primary rounded-2xl rounded-bl-md"
-                                            : "bg-bg-secondary/60 backdrop-blur-sm text-text-primary rounded-2xl rounded-bl-md"
-                                        } p-4 transition-all duration-200 ${msg.isSystem ? 'shadow-md' : ''}`}
-                                >
-                                    {/* System message indicator */}
-                                    {msg.isSystem && (
-                                        <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border-primary/30">
-                                            <span className="text-accent-primary">
-                                                {msg.content.startsWith('🔍') ? '🔍' : '📄'}
-                                            </span>
-                                            <span className="text-xs font-semibold text-accent-primary uppercase tracking-wide">
-                                                {msg.content.startsWith('🔍') ? 'Web Search' : 'Fetched Content'}
-                                            </span>
-                                        </div>
-                                    )}
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="flex-1">
+                                <div className={`flex items-start gap-4 max-w-full ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                                    {/* Avatar/Icon */}
+                                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border ${msg.role === "user"
+                                        ? (isPremium ? 'bg-amber-100 text-amber-900 border-amber-200' : 'bg-indigo-100 text-indigo-900 border-indigo-200')
+                                        : (isPremium ? 'bg-blue-600 text-white border-blue-500' : 'bg-accent-primary text-white border-accent-primary')
+                                        }`}>
+                                        {msg.role === "user" ? (userName ? userName[0].toUpperCase() : 'U') : 'AI'}
+                                    </div>
+
+                                    {/* Content Area */}
+                                    <div className={`flex-1 min-w-0 ${msg.role === "user" ? "text-right" : "text-left"}`}>
+                                        <div
+                                            className={`${msg.role === "user"
+                                                ? "user-bubble inline-block bg-gray-100 dark:bg-gray-800 text-text-primary p-3 px-4 shadow-sm"
+                                                : "ai-message-container py-1 text-text-primary"
+                                                }`}
+                                        >
+                                            {/* System message indicator */}
+                                            {msg.isSystem && (
+                                                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border-primary/30">
+                                                    <span className="text-accent-primary">
+                                                        {msg.content.startsWith('🔍') ? '🔍' : '📄'}
+                                                    </span>
+                                                    <span className="text-xs font-semibold text-accent-primary uppercase tracking-wide">
+                                                        {msg.content.startsWith('🔍') ? 'Web Search' : 'Fetched Content'}
+                                                    </span>
+                                                </div>
+                                            )}
+
                                             {msg.role === "user" ? (
                                                 <div className="space-y-1">
                                                     {msg.attachment && (
-                                                        <div className="flex items-center gap-2 text-xs bg-white/10 p-1.5 rounded-md w-fit mb-2 border border-white/20">
+                                                        <div className="flex items-center gap-2 text-xs bg-black/5 dark:bg-white/5 p-1.5 rounded-md w-fit mb-2 border border-border-primary flex-row-reverse">
                                                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                             </svg>
@@ -670,38 +684,47 @@ const ChatInterface = () => {
                                                         </div>
                                                     )}
                                                     {(msg.displayContent || msg.content).split("\n").map((line, i) => (
-                                                        // Hide the appended context from the UI if using the raw content property
-                                                        // If line starts with "---", "Context from attached", etc, we might want to hide it
-                                                        // But simpler to use displayContent if available, or just show everything for now.
-                                                        // Actually, let's use displayContent if present, otherwise regex to strip context.
-
                                                         (!msg.displayContent && line.startsWith("---") && msg.content.includes("Context from attached")) ? null :
                                                             (!msg.displayContent && line.startsWith("Context from attached")) ? null :
                                                                 (!msg.displayContent && line.startsWith("**Context from attached")) ? null :
-
                                                                     <p key={i} className="mb-1 last:mb-0 text-sm leading-relaxed">
                                                                         {line}
                                                                     </p>
                                                     ))}
                                                 </div>
                                             ) : (
-                                                renderMessageContent(msg.content, msg.isStreaming)
+                                                <div className="relative">
+                                                    {renderMessageContent(msg.content, msg.isStreaming)}
+
+                                                    {/* Message Actions */}
+                                                    {!msg.isStreaming && !msg.isSystem && (
+                                                        <div className="message-actions flex items-center gap-2 mt-2">
+                                                            <button
+                                                                onClick={() => copyToClipboard(msg.content)}
+                                                                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-text-secondary transition-colors"
+                                                                title="Copy to clipboard"
+                                                            >
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                                </svg>
+                                                            </button>
+                                                            <button
+                                                                onClick={handleSend} // Placeholder for regenerate
+                                                                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-text-secondary transition-colors"
+                                                                title="Regenerate"
+                                                            >
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
-                                        {msg.role === "agent" && !msg.isStreaming && (
-                                            <button
-                                                onClick={() => copyToClipboard(msg.content)}
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-bg-primary rounded"
-                                                title="Copy to clipboard"
-                                            >
-                                                <svg className={`w-4 h-4 text-text-secondary`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                                </svg>
-                                            </button>
-                                        )}
-                                    </div>
-                                    <div className={`text-xs mt-2 ${msg.role === "user" ? (isPremium ? "text-amber-100" : "text-indigo-200") : "text-text-secondary"}`}>
-                                        {formatTime(msg.timestamp)}
+                                        <div className={`text-[10px] mt-1 ${msg.role === "user" ? "mr-1 text-text-secondary" : "ml-1 text-text-secondary"}`}>
+                                            {formatTime(msg.timestamp)}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -755,88 +778,97 @@ const ChatInterface = () => {
                 )}
 
                 {/* Input Form */}
-                {/* Input Form */}
-                <div className={`bg-bg-secondary/80 backdrop-blur-md shadow-lg border-t border-border-primary p-4`}>
-                    {/* Attachment Preview */}
-                    {attachment && (
-                        <div className="max-w-4xl mx-auto mb-2 flex items-center gap-2 bg-bg-primary/50 p-2 rounded-lg border border-border-primary w-fit">
-                            <div className="p-1.5 bg-accent-primary/10 rounded-md">
-                                <svg className="w-4 h-4 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
+                <div className="p-4 bg-gradient-to-t from-bg-primary via-bg-primary to-transparent">
+                    <div className="max-w-3xl mx-auto relative">
+                        {/* Attachment Preview (Floating above input) */}
+                        {attachment && (
+                            <div className="absolute bottom-full mb-3 left-0 flex items-center gap-2 bg-bg-secondary p-2 px-3 rounded-lg border border-border-primary shadow-sm animate-fadeIn">
+                                <div className="p-1.5 bg-accent-primary/10 rounded-md">
+                                    <svg className="w-4 h-4 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </div>
+                                <span className="text-sm text-text-primary max-w-xs truncate font-medium">
+                                    {attachment.isLoading ? "Processing..." : attachment.name}
+                                </span>
+                                {attachment.isLoading ? (
+                                    <svg className="animate-spin h-3 w-3 text-accent-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                ) : (
+                                    <button
+                                        onClick={removeAttachment}
+                                        className="ml-2 text-text-secondary hover:text-red-500 transition-colors"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                )}
                             </div>
-                            <span className="text-sm text-text-primary max-w-xs truncate">
-                                {attachment.isLoading ? "Processing..." : attachment.name}
-                            </span>
-                            {attachment.isLoading && (
-                                <svg className="animate-spin h-3 w-3 text-accent-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            )}
-                            <button
-                                onClick={removeAttachment}
-                                className="ml-2 text-text-secondary hover:text-red-500 transition-colors"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                    )}
+                        )}
 
-                    <form onSubmit={handleSend} className="max-w-4xl mx-auto flex gap-3">
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileSelect}
-                            className="hidden"
-                            accept=".pdf,.docx,.txt"
-                        />
-                        <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="p-3 rounded-xl border border-border-primary/50 text-text-secondary hover:text-accent-primary hover:bg-bg-primary transition-colors duration-200"
-                            title="Attach file"
-                            disabled={isLoading || attachment !== null}
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                            </svg>
-                        </button>
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            placeholder="Ask about timetables, fees, exams..."
-                            className={`flex-1 p-3 rounded-xl border border-border-primary/50 focus:border-accent-primary bg-bg-primary/50 text-text-primary transition-all duration-200 outline-none`}
-                            disabled={isLoading}
-                        />
-                        {isLoading ? (
+                        <form onSubmit={handleSend} className="floating-input-container bg-bg-secondary border border-border-primary rounded-3xl p-2 px-4 flex items-center gap-2 group input-glow">
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileSelect}
+                                className="hidden"
+                                accept=".pdf,.docx,.txt"
+                            />
                             <button
                                 type="button"
-                                onClick={handleStop}
-                                className="w-12 h-12 flex items-center justify-center rounded-full bg-red-500 hover:bg-red-600 text-white transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
-                                title="Stop"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="p-2 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-primary transition-colors duration-200"
+                                title="Attach file"
+                                disabled={isLoading || attachment !== null}
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                                 </svg>
                             </button>
-                        ) : (
-                            <button
-                                type="submit"
-                                className={`w-12 h-12 flex items-center justify-center rounded-full ${isPremium ? 'premium-gradient-bg' : 'bg-gradient-to-r from-indigo-600 to-purple-600'} text-white hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:scale-105`}
-                                disabled={!input.trim()}
-                            >
-                                <svg className="w-5 h-5 transform rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                </svg>
-                            </button>
-                        )}
-                    </form>
+
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                placeholder="Message KCA Connect..."
+                                className="flex-1 bg-transparent py-3 text-text-primary placeholder:text-text-secondary outline-none text-sm"
+                                disabled={isLoading}
+                            />
+
+                            {isLoading ? (
+                                <button
+                                    type="button"
+                                    onClick={handleStop}
+                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-red-500 text-white transition-all duration-200"
+                                    title="Stop"
+                                >
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <rect width="10" height="10" x="7" y="7" rx="1" />
+                                    </svg>
+                                </button>
+                            ) : (
+                                <button
+                                    type="submit"
+                                    className={`w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200 ${input.trim()
+                                        ? (isPremium ? 'premium-gradient-bg' : 'bg-black dark:bg-white text-white dark:text-black')
+                                        : 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
+                                        }`}
+                                    disabled={!input.trim()}
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                                    </svg>
+                                </button>
+                            )}
+                        </form>
+                        <p className="text-[10px] text-center text-text-secondary mt-2 px-4 opacity-60">
+                            KCA Connect AI can make mistakes. Check important info.
+                        </p>
+                    </div>
                 </div>
             </div>
 

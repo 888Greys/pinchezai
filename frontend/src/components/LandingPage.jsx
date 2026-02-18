@@ -114,9 +114,12 @@ const LandingPage = () => {
                             >
                                 Start Chatting Now
                             </Link>
-                            <button className="px-10 py-4 rounded-full border-2 border-border-primary font-bold text-lg hover:bg-bg-secondary transition-all">
+                            <a
+                                href="#how-it-works"
+                                className="px-10 py-4 rounded-full border-2 border-border-primary font-bold text-lg hover:bg-bg-secondary transition-all text-center"
+                            >
                                 Learn More
-                            </button>
+                            </a>
                         </div>
                     </div>
 

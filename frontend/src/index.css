@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+html {
+    scroll-behavior: smooth;
+}
+
 @theme {
 
     /* Base Animations */
@@ -98,9 +102,12 @@
 }
 
 @keyframes cursor-blink {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
     }
+
     50% {
         opacity: 0;
     }
@@ -178,3 +185,31 @@
     background-color: #c084fc;
 }
 
+/* Message Bubbles */
+.user-bubble {
+    border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
+}
+
+.ai-message-container {
+    transition: background-color 0.2s;
+}
+
+.ai-message-container:hover .message-actions {
+    opacity: 1;
+}
+
+.message-actions {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+/* Floating Input */
+.floating-input-container {
+    max-width: 48rem;
+    margin: 0 auto;
+    position: relative;
+}
+
+.input-glow:focus-within {
+    box-shadow: 0 0 0 2px var(--accent-primary);
+}

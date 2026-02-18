@@ -27,10 +27,10 @@ const Settings = () => {
             {isOpen && (
                 <>
                     <div
-                        className="fixed inset-0 z-10"
+                        className="fixed inset-0 z-40"
                         onClick={() => setIsOpen(false)}
                     ></div>
-                    <div className="absolute right-0 mt-2 w-56 rounded-xl shadow-xl bg-bg-secondary border border-border-primary z-20 overflow-hidden animate-fadeIn">
+                    <div className="fixed right-8 top-20 w-56 rounded-xl shadow-xl bg-bg-secondary border border-border-primary z-50 overflow-hidden animate-fadeIn">
                         <div className="p-4 border-b border-border-primary">
                             <h3 className="font-semibold text-text-primary">Settings</h3>
                         </div>

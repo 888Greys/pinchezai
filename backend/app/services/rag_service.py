@@ -16,13 +16,58 @@ logger = logging.getLogger(__name__)
 def _fix_merged_words(text: str) -> str:
     """
     Fix merged words from PDF extraction (e.g. "RequirementsTo" -> "Requirements To")
+    Also fixes issues where header text runs into content like "## HeaderText" -> "## Header Text"
     """
     if not text:
         return text
-    # Fix lowercase followed by uppercase
+    
+    # Fix lowercase followed by uppercase (e.g., "RequirementsTo" -> "Requirements To")
     text = re.sub(r'([a-z])([A-Z])', r'\1 \2', text)
-    # Fix uppercase sequence followed by lowercase
+    # Fix uppercase sequence followed by lowercase (e.g., "SYSTEMSIf" -> "SYSTEMS If")
     text = re.sub(r'([A-Z])([A-Z][a-z])', r'\1 \2', text)
+    
+    # Fix Markdown headers that run into content without space
+    # ##HeaderText -> ## Header Text
+    text = re.sub(r'(#{1,6})([A-Z])', r'\1 \2', text)
+    
+    # Fix case where lowercase word runs into uppercase (e.g., "andUniversity" -> "and University")
+    text = re.sub(r'([a-z])([A-Z][a-z]+)', r'\1 \2', text)
+    
+    # Collapse multiple spaces into single space
+    text = re.sub(r' {2,}', ' ', text)
+    
+    return text
+
+def _clean_markdown_headers(text: str) -> str:
+    """
+    Clean and normalize Markdown headers from document chunks.
+    Converts header syntax to cleaner text format to prevent them
+    from appearing in AI responses.
+    """
+    if not text:
+        return text
+    
+    # Define the header replacement pattern
+    # #### Header -> **Header:** (bold with colon)
+    # ### Header -> **Header:** (bold with colon)
+    # ## Header -> **Header** (bold without colon)
+    # # Header -> **Header** (bold without colon)
+    
+    # Replace #####+ headers (least important) with bold + colon
+    text = re.sub(r'^#{5,}\s*(.+?)$', r'**\1:**', text, flags=re.MULTILINE)
+    
+    # Replace #### headers with bold + colon
+    text = re.sub(r'^####\s*(.+?)$', r'**\1:**', text, flags=re.MULTILINE)
+    
+    # Replace ### headers with bold (no colon for sub-headers)
+    text = re.sub(r'^###\s*(.+?)$', r'**\1**', text, flags=re.MULTILINE)
+    
+    # Replace ## headers with bold (main sections)
+    text = re.sub(r'^##\s*(.+?)$', r'**\1**', text, flags=re.MULTILINE)
+    
+    # Replace # headers with bold (top level)
+    text = re.sub(r'^#\s*(.+?)$', r'**\1**', text, flags=re.MULTILINE)
+    
     return text
 
 def _format_document_context(docs: list) -> str:
@@ -38,6 +83,8 @@ def _format_document_context(docs: list) -> str:
         content = doc.page_content.strip()
         # Fix merged words from PDF extraction
         content = _fix_merged_words(content)
+        # Clean Markdown headers to prevent them appearing in AI responses
+        content = _clean_markdown_headers(content)
         # Ensure each chunk ends with proper punctuation
         if content and content[-1] not in '.!?。':
             content = content + '.'
@@ -98,7 +145,8 @@ Instructions:
    - Use bullet points or numbered lists for steps or multiple items
    - Use headings (###) to separate different topics
    - Ensure there is proper spacing between sections
-   - IMPORTANT: Always start a new line before a heading (###) or a list item (- or 1.)"""
+   - IMPORTANT: Always start a new line before a heading (###) or a list item (- or 1.)
+   - IMPORTANT: Do NOT use #### (4 hash marks) for headings - use ### (3 hash marks) or less instead"""
 
     def _initialize_llm(self):
         """Initialize the preferred LLM based on configuration and preference"""

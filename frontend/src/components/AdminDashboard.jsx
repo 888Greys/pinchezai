@@ -90,6 +90,8 @@ const AdminDashboard = () => {
     const [editUser, setEditUser] = useState(null); // { ...user }
     const [editSaving, setEditSaving] = useState(false);
     const [errorMsg, setErrorMsg] = useState(null);
+    const [successMsg, setSuccessMsg] = useState(null);
+    const [actionLoading, setActionLoading] = useState(null); // user ID currently in action
 
     // Upload State
     const [uploadFile, setUploadFile] = useState(null);
@@ -142,10 +144,10 @@ const AdminDashboard = () => {
             setLoading(false);
             return;
         }
-        
+
         const token = session.access_token;
         console.log('Loading analytics with token:', token ? 'present' : 'missing');
-        
+
         setLoading(true);
         try {
             const [
@@ -224,26 +226,61 @@ const AdminDashboard = () => {
         }
     };
 
+    const showSuccess = (msg) => {
+        setSuccessMsg(msg);
+        setTimeout(() => setSuccessMsg(null), 3000);
+    };
+
     const handleMakeAdmin = async (userId) => {
         if (!session?.access_token) return;
-        await makeUserAdmin(session.access_token, userId);
-        await loadUsers();
+        setActionLoading(userId);
+        setErrorMsg(null);
+        try {
+            await makeUserAdmin(session.access_token, userId);
+            showSuccess('User has been granted admin privileges.');
+            await loadUsers();
+        } catch (e) {
+            console.error('Error making user admin:', e);
+            setErrorMsg(e.message || 'Failed to make user admin. Please try again.');
+        } finally {
+            setActionLoading(null);
+        }
     };
 
     const handleRemoveAdmin = async (userId) => {
         if (!session?.access_token) return;
-        await removeUserAdmin(session.access_token, userId);
-        await loadUsers();
+        setActionLoading(userId);
+        setErrorMsg(null);
+        try {
+            await removeUserAdmin(session.access_token, userId);
+            showSuccess('Admin privileges removed successfully.');
+            await loadUsers();
+        } catch (e) {
+            console.error('Error removing admin:', e);
+            setErrorMsg(e.message || 'Failed to remove admin privileges. Please try again.');
+        } finally {
+            setActionLoading(null);
+        }
     };
 
     const handleDeleteUser = async (userId) => {
         if (!session?.access_token) return;
         if (!confirm('Delete this user? This cannot be undone.')) return;
-        await deleteUserApi(session.access_token, userId);
-        if (users.length === 1 && usersOffset > 0) {
-            setUsersOffset(Math.max(0, usersOffset - usersLimit));
-        } else {
-            await loadUsers();
+        setActionLoading(userId);
+        setErrorMsg(null);
+        try {
+            await deleteUserApi(session.access_token, userId);
+            showSuccess('User deleted successfully.');
+            if (users.length === 1 && usersOffset > 0) {
+                setUsersOffset(Math.max(0, usersOffset - usersLimit));
+            } else {
+                await loadUsers();
+            }
+        } catch (e) {
+            console.error('Error deleting user:', e);
+            setErrorMsg(e.message || 'Failed to delete user. Please try again.');
+        } finally {
+            setActionLoading(null);
         }
     };
 
@@ -365,7 +402,7 @@ const AdminDashboard = () => {
                     <div className="bg-bg-secondary rounded-xl p-6 border border-border-primary shadow-sm">
                         <h3 className="text-lg font-semibold text-text-primary mb-4">Activity Over Time</h3>
                         {chartData.length > 0 ? (
-                            <div className="space-y-3 max-h-80 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-accent-primary scrollbar-track-bg-primary">
+                            <div className="space-y-3 max-h-80 overflow-y-auto pr-2 scrollbar-thin">
                                 {chartData.map((item, index) => (
                                     <div key={index} className="flex items-center gap-4">
                                         <span className="text-text-secondary text-sm w-16">{item.date}</span>
@@ -407,7 +444,7 @@ const AdminDashboard = () => {
                     <div className="bg-bg-secondary rounded-xl p-6 border border-border-primary shadow-sm">
                         <h3 className="text-lg font-semibold text-text-primary mb-4">Top Chat Topics</h3>
                         {topTopics.length > 0 ? (
-                            <div className="space-y-3 max-h-80 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-accent-primary scrollbar-track-bg-primary">
+                            <div className="space-y-3 max-h-80 overflow-y-auto pr-2 scrollbar-thin">
                                 {topTopics.map((topic, index) => (
                                     <div key={index} className="flex items-center gap-3">
                                         <span className="text-text-secondary text-sm w-6">{index + 1}.</span>
@@ -498,6 +535,9 @@ const AdminDashboard = () => {
                     {errorMsg && (
                         <div className="text-red-400 text-sm px-3 py-1 bg-red-500/10 rounded">{errorMsg}</div>
                     )}
+                    {successMsg && (
+                        <div className="text-green-400 text-sm px-3 py-1 bg-green-500/10 rounded">{successMsg}</div>
+                    )}
                     <div className="flex items-center gap-2">
                         <span className="text-text-secondary text-sm">Per page:</span>
                         <select
@@ -545,12 +585,36 @@ const AdminDashboard = () => {
                                         <td className="py-2 pr-4 text-text-secondary">{u.created_at ? new Date(u.created_at).toLocaleDateString() : '-'}</td>
                                         <td className="py-2 pr-4 flex gap-2">
                                             {u.is_admin ? (
-                                                <button onClick={() => handleRemoveAdmin(u.id)} className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 text-white">Remove Admin</button>
+                                                <button
+                                                    onClick={() => handleRemoveAdmin(u.id)}
+                                                    disabled={actionLoading === u.id}
+                                                    className={`px-2 py-1 text-xs rounded text-white ${actionLoading === u.id ? 'bg-gray-600 cursor-not-allowed opacity-60' : 'bg-gray-700 hover:bg-gray-600'}`}
+                                                >
+                                                    {actionLoading === u.id ? 'Processing...' : 'Remove Admin'}
+                                                </button>
                                             ) : (
-                                                <button onClick={() => handleMakeAdmin(u.id)} className="px-2 py-1 text-xs rounded bg-blue-600 hover:bg-blue-500 text-white">Make Admin</button>
+                                                <button
+                                                    onClick={() => handleMakeAdmin(u.id)}
+                                                    disabled={actionLoading === u.id}
+                                                    className={`px-2 py-1 text-xs rounded text-white ${actionLoading === u.id ? 'bg-gray-600 cursor-not-allowed opacity-60' : 'bg-blue-600 hover:bg-blue-500'}`}
+                                                >
+                                                    {actionLoading === u.id ? 'Processing...' : 'Make Admin'}
+                                                </button>
                                             )}
-                                            <button onClick={() => openEdit(u)} className="px-2 py-1 text-xs rounded bg-yellow-600 hover:bg-yellow-500 text-white">Edit</button>
-                                            <button onClick={() => handleDeleteUser(u.id)} className="px-2 py-1 text-xs rounded bg-red-600 hover:bg-red-500 text-white">Delete</button>
+                                            <button
+                                                onClick={() => openEdit(u)}
+                                                disabled={actionLoading === u.id}
+                                                className={`px-2 py-1 text-xs rounded text-white ${actionLoading === u.id ? 'bg-gray-600 cursor-not-allowed opacity-60' : 'bg-yellow-600 hover:bg-yellow-500'}`}
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteUser(u.id)}
+                                                disabled={actionLoading === u.id}
+                                                className={`px-2 py-1 text-xs rounded text-white ${actionLoading === u.id ? 'bg-gray-600 cursor-not-allowed opacity-60' : 'bg-red-600 hover:bg-red-500'}`}
+                                            >
+                                                {actionLoading === u.id ? 'Deleting...' : 'Delete'}
+                                            </button>
                                         </td>
                                     </tr>
                                 ))
@@ -671,4 +735,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
