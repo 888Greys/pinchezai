@@ -5,6 +5,7 @@ import LandingPage from "./components/LandingPage";
 import Auth from "./components/Auth";
 import UserProfile from "./components/UserProfile";
 import AdminDashboard from "./components/AdminDashboard";
+import ResetPassword from "./components/ResetPassword";
 import { ThemeProvider } from "./context/ThemeContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
@@ -23,6 +24,7 @@ const AppRoutes = () => {
           user ? <Navigate to="/chat" /> : <Auth />
         }
       />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route
         path="/chat"
         element={

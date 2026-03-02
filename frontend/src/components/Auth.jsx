@@ -18,7 +18,7 @@ const Auth = () => {
     const [loading, setLoading] = useState(false);
 
     const { theme } = useTheme();
-    const { signIn, signUp } = useAuth();
+    const { signIn, signUp, resetPassword } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -28,7 +28,12 @@ const Auth = () => {
         setLoading(true);
 
         try {
-            if (activeTab === 'signin') {
+            if (activeTab === 'forgot_password') {
+                const { error } = await resetPassword(email);
+                if (error) throw error;
+                setSuccess('Password reset link has been sent to your email.');
+                // Optionally switch back to signin after a delay or user action
+            } else if (activeTab === 'signin') {
                 const { error, data } = await signIn({ email, password });
                 if (error) throw error;
                 if (data?.session) navigate('/chat');
@@ -94,12 +99,12 @@ const Auth = () => {
                 <div className="flex p-1 bg-bg-primary/50 rounded-2xl mb-8 border border-border-primary">
                     <button
                         onClick={() => setActiveTab('signin')}
-                        className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'signin'
+                        className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'signin' || activeTab === 'forgot_password'
                             ? (isPremium ? 'premium-gradient-bg text-white' : 'bg-blue-600 text-white') + ' shadow-lg'
                             : 'text-text-secondary hover:text-text-primary'
                             }`}
                     >
-                        Sign In
+                        {activeTab === 'forgot_password' ? 'Reset Password' : 'Sign In'}
                     </button>
                     <button
                         onClick={() => setActiveTab('signup')}
@@ -114,12 +119,14 @@ const Auth = () => {
 
                 <div className="text-center mb-8">
                     <h2 className={`text-4xl font-extrabold mb-2 ${isPremium ? 'premium-gradient-text' : ''}`}>
-                        {activeTab === 'signin' ? 'Welcome Back' : 'Join the Future'}
+                        {activeTab === 'signin' ? 'Welcome Back' : activeTab === 'signup' ? 'Join the Future' : 'Reset Password'}
                     </h2>
                     <p className="text-text-secondary text-sm">
                         {activeTab === 'signin'
                             ? 'Sign in to access your digital student companion'
-                            : 'Start your journey with KCA\'s smartest assistant'}
+                            : activeTab === 'forgot_password'
+                                ? 'Enter your email to receive a recovery link'
+                                : 'Start your journey with KCA\'s smartest assistant'}
                     </p>
                 </div>
 
@@ -192,58 +199,68 @@ const Auth = () => {
                         </div>
                     )}
 
-                    <div>
-                        <div className="flex justify-between mb-2 ml-1">
-                            <label className="text-xs font-bold uppercase tracking-widest text-text-secondary">Password</label>
-                            {activeTab === 'signin' && (
-                                <button type="button" className="text-[10px] font-bold text-accent-primary hover:underline uppercase tracking-tighter">Forgot Password?</button>
+                    {activeTab !== 'forgot_password' && (
+                        <>
+                            <div>
+                                <div className="flex justify-between mb-2 ml-1">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-text-secondary">Password</label>
+                                    {activeTab === 'signin' && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab('forgot_password')}
+                                            className="text-[10px] font-bold text-accent-primary hover:underline uppercase tracking-tighter"
+                                        >
+                                            Forgot Password?
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        required
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full p-4 rounded-2xl border border-border-primary bg-bg-primary/50 text-text-primary focus:outline-none focus:border-accent-primary transition-all backdrop-blur-sm pr-12"
+                                        placeholder="••••••••"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
+                                    >
+                                        {showPassword ? (
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                            </svg>
+                                        ) : (
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {activeTab === 'signup' && (
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-widest text-text-secondary mb-2 ml-1">Confirm Password</label>
+                                    <input
+                                        type="password"
+                                        required
+                                        className="w-full p-4 rounded-2xl border border-border-primary bg-bg-primary/50 text-text-primary focus:outline-none focus:border-accent-primary transition-all backdrop-blur-sm"
+                                        placeholder="••••••••"
+                                    />
+                                </div>
                             )}
-                        </div>
-                        <div className="relative">
-                            <input
-                                type={showPassword ? "text" : "password"}
-                                required
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full p-4 rounded-2xl border border-border-primary bg-bg-primary/50 text-text-primary focus:outline-none focus:border-accent-primary transition-all backdrop-blur-sm pr-12"
-                                placeholder="••••••••"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
-                            >
-                                {showPassword ? (
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                    </svg>
-                                ) : (
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                )}
-                            </button>
-                        </div>
-                    </div>
 
-                    {activeTab === 'signup' && (
-                        <div>
-                            <label className="block text-xs font-bold uppercase tracking-widest text-text-secondary mb-2 ml-1">Confirm Password</label>
-                            <input
-                                type="password"
-                                required
-                                className="w-full p-4 rounded-2xl border border-border-primary bg-bg-primary/50 text-text-primary focus:outline-none focus:border-accent-primary transition-all backdrop-blur-sm"
-                                placeholder="••••••••"
-                            />
-                        </div>
-                    )}
-
-                    {activeTab === 'signin' && (
-                        <div className="flex items-center gap-2 mb-4 ml-1">
-                            <input type="checkbox" id="remember" className="rounded border-border-primary bg-bg-primary/50 text-blue-600 focus:ring-0" />
-                            <label htmlFor="remember" className="text-xs font-medium text-text-secondary">Remember me for 30 days</label>
-                        </div>
+                            {activeTab === 'signin' && (
+                                <div className="flex items-center gap-2 mb-4 ml-1">
+                                    <input type="checkbox" id="remember" className="rounded border-border-primary bg-bg-primary/50 text-blue-600 focus:ring-0" />
+                                    <label htmlFor="remember" className="text-xs font-medium text-text-secondary">Remember me for 30 days</label>
+                                </div>
+                            )}
+                        </>
                     )}
 
                     <button
@@ -258,12 +275,22 @@ const Auth = () => {
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                                {activeTab === 'signin' ? 'Signing In...' : 'Registering...'}
+                                {activeTab === 'signin' ? 'Signing In...' : activeTab === 'signup' ? 'Registering...' : 'Sending Link...'}
                             </>
                         ) : (
-                            activeTab === 'signin' ? 'Sign Into Account' : 'Create Student Account'
+                            activeTab === 'signin' ? 'Sign Into Account' : activeTab === 'signup' ? 'Create Student Account' : 'Send Recovery Link'
                         )}
                     </button>
+
+                    {activeTab === 'forgot_password' && (
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('signin')}
+                            className="w-full text-xs font-bold text-text-secondary hover:text-text-primary uppercase tracking-widest mt-4"
+                        >
+                            Back to Sign In
+                        </button>
+                    )}
                 </form>
 
                 <div className="mt-8 pt-6 border-t border-border-primary text-center">

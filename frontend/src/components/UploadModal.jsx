@@ -1,6 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, File, X, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { uploadDocument } from '../services/api';
 
 const UploadModal = ({ isOpen, onClose, onUploadComplete }) => {
     const [files, setFiles] = useState([]);
@@ -42,45 +44,29 @@ const UploadModal = ({ isOpen, onClose, onUploadComplete }) => {
         setFiles(files.filter(file => file !== fileToRemove));
     };
 
+    const { session } = useAuth();
+
     const handleUpload = async () => {
-        if (files.length === 0) return;
+        if (files.length === 0 || !session?.access_token) return;
 
         setUploading(true);
         setUploadStatus(null);
         setErrorMessage('');
 
         try {
-            const token = localStorage.getItem('sb-access-token'); // Assuming Supabase token storage key
-            // If token key is different, you might need to check Auth.jsx or Context
-
-            if (!token) {
-                throw new Error("You must be logged in to upload files.");
-            }
+            const token = session.access_token;
 
             // Upload files sequentially
             for (const file of files) {
-                const formData = new FormData();
-                formData.append('file', file);
-
-                const response = await fetch('http://localhost:8000/documents/upload', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.detail || `Failed to upload ${file.name}`);
-                }
+                await uploadDocument(token, file);
+                console.log(`Successfully uploaded: ${file.name}`);
             }
 
             setUploadStatus('success');
             setFiles([]);
             if (onUploadComplete) onUploadComplete();
 
-            // Auto close after success?
+            // Store success for 2 seconds then close
             setTimeout(() => {
                 onClose();
                 setUploadStatus(null);
@@ -89,7 +75,7 @@ const UploadModal = ({ isOpen, onClose, onUploadComplete }) => {
         } catch (error) {
             console.error('Upload failed:', error);
             setUploadStatus('error');
-            setErrorMessage(error.message);
+            setErrorMessage(error.message || "Failed to upload one or more files.");
         } finally {
             setUploading(false);
         }

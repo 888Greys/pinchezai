@@ -146,10 +146,11 @@ const AdminDashboard = () => {
         }
 
         const token = session.access_token;
-        console.log('Loading analytics with token:', token ? 'present' : 'missing');
+        console.log('AdminDashboard: Starting analytics load with token (first 10 chars):', token.substring(0, 10));
 
         setLoading(true);
         try {
+            console.log('AdminDashboard: Fetching all analytics data concurrently...');
             const [
                 overviewData,
                 chatData,
@@ -160,35 +161,36 @@ const AdminDashboard = () => {
                 healthData
             ] = await Promise.all([
                 getAnalyticsOverview(token).catch(e => {
-                    console.error('Overview error:', e);
+                    console.error('AdminDashboard: Overview fetch failed:', e);
                     return null;
                 }),
                 getChatAnalytics(token).catch(e => {
-                    console.error('Chat analytics error:', e);
+                    console.error('AdminDashboard: Chat stats fetch failed:', e);
                     return null;
                 }),
                 getChatsDaily(token, days).catch(e => {
-                    console.error('Chats daily error:', e);
+                    console.error('AdminDashboard: Daily chats fetch failed:', e);
                     return [];
                 }),
                 getMessagesDaily(token, days).catch(e => {
-                    console.error('Messages daily error:', e);
+                    console.error('AdminDashboard: Daily messages fetch failed:', e);
                     return [];
                 }),
                 getTopTopics(token, 10).catch(e => {
-                    console.error('Top topics error:', e);
+                    console.error('AdminDashboard: Top topics fetch failed:', e);
                     return [];
                 }),
                 getEngagementAnalytics(token).catch(e => {
-                    console.error('Engagement error:', e);
+                    console.error('AdminDashboard: Engagement stats fetch failed:', e);
                     return null;
                 }),
                 getSystemHealth(token).catch(e => {
-                    console.error('System health error:', e);
+                    console.error('AdminDashboard: System health fetch failed:', e);
                     return null;
                 })
             ]);
 
+            console.log('AdminDashboard: Analytics data received successfully');
             setOverview(overviewData);
             setChatStats(chatData);
             setChatsDaily(chatsData || []);
@@ -197,7 +199,7 @@ const AdminDashboard = () => {
             setEngagement(engagementData);
             setSystemHealth(healthData);
         } catch (error) {
-            console.error('Error loading analytics:', error);
+            console.error('AdminDashboard: Critical error in loadAnalytics:', error);
         } finally {
             setLoading(false);
         }

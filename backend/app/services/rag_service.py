@@ -97,6 +97,15 @@ class RagService:
     def __init__(self):
         self.embeddings = HuggingFaceEmbeddings(model_name=settings.EMBEDDING_MODEL)
         self.client = QdrantClient(url=settings.QDRANT_URL)
+        
+        # Ensure collection exists before creating vector_store
+        try:
+            from app.services.qdrant_service import qdrant_service
+            # all-MiniLM-L6-v2 uses 384 dimensions
+            qdrant_service.create_collection_if_not_exists(vector_size=384)
+        except Exception as e:
+            logger.warning(f"Could not ensure Qdrant collection in RagService init: {e}")
+
         self.vector_store = QdrantVectorStore(
             client=self.client,
             collection_name=settings.COLLECTION_NAME,

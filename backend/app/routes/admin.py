@@ -16,34 +16,58 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_ANON_KEY)
 
 
-def get_admin_user(authorization: str = Header(None)):
+async def get_admin_user(authorization: str = Header(None)):
     """Dependency to verify admin user"""
     if not authorization:
+        logger.warning("Authorization header missing in admin request")
         raise HTTPException(status_code=401, detail="Authorization header missing")
     
     try:
         token = authorization.split(" ")[1] if " " in authorization else authorization
+        logger.info(f"Verifying admin token (starts with: {token[:10]}...)")
         
+        # Verify with Supabase
         user_response = supabase.auth.get_user(token)
         if not user_response.user:
-            logger.warning("Invalid token - no user found")
+            logger.warning("Invalid token - no user found for admin request")
             raise HTTPException(status_code=401, detail="Invalid or expired token")
         
         user = user_response.user
-        logger.info(f"User from token: {user.email}, metadata: {user.user_metadata}")
+        user_id = user.id
+        email = user.email
+        metadata = user.user_metadata or {}
         
-        is_admin = user.user_metadata.get('_admin', False) if user.user_metadata else False
+        logger.info(f"Admin auth check for user: {email} ({user_id})")
+        logger.debug(f"User metadata: {metadata}")
+        
+        # 1. Check metadata for _admin flag
+        is_admin = metadata.get('_admin', False)
+        
+        # 2. Fallback: Check profiles table if metadata flag is missing
+        if not is_admin:
+            logger.info(f"Admin flag missing in metadata for {email}, checking profiles table...")
+            try:
+                service_client = get_service_client()
+                profile_response = service_client.table("profiles").select("is_admin").eq("id", user_id).single().execute()
+                if profile_response.data:
+                    is_admin = profile_response.data.get("is_admin", False)
+                    logger.info(f"Profile table check for {email}: is_admin={is_admin}")
+            except Exception as profile_err:
+                logger.error(f"Error checking profiles table for {email}: {profile_err}")
         
         if not is_admin:
-            logger.warning(f"Non-admin user {user.email} attempted to access admin endpoints")
-            raise HTTPException(status_code=403, detail="Admin access required. You do not have admin privileges.")
+            logger.warning(f"Access denied: User {email} does not have admin privileges")
+            raise HTTPException(
+                status_code=403, 
+                detail="Admin access required. You do not have admin privileges."
+            )
         
-        logger.info(f"Admin user {user.email} accessed admin dashboard")
+        logger.info(f"Admin access GRANTED for user: {email}")
         return user
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Auth error in admin: {e}")
+        logger.error(f"Auth error in get_admin_user: {e}", exc_info=True)
         raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
 
 

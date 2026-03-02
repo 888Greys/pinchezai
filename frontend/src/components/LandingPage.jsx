@@ -12,32 +12,32 @@ const LandingPage = () => {
         {
             title: "Smart Timetable Access",
             description: "Personalized class schedules and automatic reminders for your upcoming lectures.",
-            icon: "📅"
+
         },
         {
             title: "Fee Inquiries",
             description: "Balance checks, payment deadlines, and detailed fee structures at your fingertips.",
-            icon: "💰"
+
         },
         {
             title: "Exam Schedules",
             description: "Instant access to exam timetables, venues, and necessary preparation resources.",
-            icon: "📝"
+
         },
         {
             title: "Smart Notifications",
             description: "Targeted announcements filtered by your campus, faculty, and specific program.",
-            icon: "🔔"
+
         },
         {
             title: "Natural Conversations",
             description: "Ask questions in plain English or Swahili and get accurate, human-like AI responses.",
-            icon: "💬"
+
         },
         {
             title: "Multi-Campus Support",
             description: "Comprehensive information for Main Campus, Town Campus, and Kitengela Campus.",
-            icon: "📍"
+
         }
     ];
 

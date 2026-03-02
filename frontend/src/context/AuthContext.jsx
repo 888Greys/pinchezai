@@ -33,10 +33,16 @@ export const AuthProvider = ({ children }) => {
         signUp: (data) => supabase.auth.signUp(data),
         signIn: (data) => supabase.auth.signInWithPassword(data),
         signOut: () => supabase.auth.signOut(),
+        resetPassword: (email) =>
+            supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/reset-password`,
+            }),
+        updatePassword: (newPassword) =>
+            supabase.auth.updateUser({ password: newPassword }),
         updateUser: async (avatarUrl = null) => {
             // Force refresh the session to get updated user metadata
             const { data: { session: freshSession } } = await supabase.auth.refreshSession();
-            
+
             if (freshSession) {
                 // Merge the fresh session user with any provided avatar URL
                 setUser(prev => ({

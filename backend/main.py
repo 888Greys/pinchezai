@@ -43,6 +43,18 @@ from app.routes import admin, documents
 app.include_router(admin.router)
 app.include_router(documents.router)
 
+@app.on_event("startup")
+async def startup_event():
+    """Initialize services on startup"""
+    try:
+        from app.services.qdrant_service import qdrant_service
+        logger.info("Initializing Qdrant collection...")
+        # all-MiniLM-L6-v2 uses 384 dimensions
+        qdrant_service.create_collection_if_not_exists(vector_size=384)
+        logger.info("Startup initialization complete.")
+    except Exception as e:
+        logger.error(f"Error during startup: {e}")
+
 async def get_current_user(authorization: str = Header(None)):
     """Dependency to verify Supabase JWT token"""
     if not authorization:

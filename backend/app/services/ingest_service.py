@@ -147,12 +147,14 @@ class IngestService:
                      return {"success": False, "message": "Could not split documents."}
 
                 # Ingest into Qdrant
+                logger.info(f"Adding {len(texts)} documents to vector store...")
                 self.vector_store.add_documents(texts)
                 
-                logger.info(f"Ingested {len(texts)} chunks from {file.filename}")
+                logger.info(f"Successfully ingested {len(texts)} chunks from {file.filename}")
                 return {
                     "success": True, 
-                    "chunks": len(texts)
+                    "chunks": len(texts),
+                    "filename": file.filename
                 }
 
             finally:
