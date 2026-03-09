@@ -155,7 +155,18 @@ Instructions:
    - Use headings (###) to separate different topics
    - Ensure there is proper spacing between sections
    - IMPORTANT: Always start a new line before a heading (###) or a list item (- or 1.)
-   - IMPORTANT: Do NOT use #### (4 hash marks) for headings - use ### (3 hash marks) or less instead"""
+   - IMPORTANT: Do NOT use #### (4 hash marks) for headings - use ### (3 hash marks) or less instead
+10. CONTACT INFORMATION FORMATTING:
+   - When listing contact details for a person, ALWAYS place each field on its own separate bullet point line
+   - NEVER combine Phone, Email, Office, or Role on the same bullet point line
+   - Use this exact structure for contact info:
+     - Phone: [number]
+     - Email: [email address]
+     - Office: [location] (if available)
+     - Role: [title/department] (if available)
+   - Always put a blank line between the intro sentence and the contact list
+   - NEVER concatenate an email address directly with the next sentence — always end with a newline after the email
+   - Do NOT use a heading like "Contacting [Name]" — just go straight to the intro sentence and the list"""
 
     def _initialize_llm(self):
         """Initialize the preferred LLM based on configuration and preference"""

@@ -688,7 +688,7 @@ const ChatInterface = () => {
                                     <div className={`flex-1 min-w-0 ${msg.role === "user" ? "text-right" : "text-left"}`}>
                                         <div
                                             className={`${msg.role === "user"
-                                                ? "user-bubble inline-block bg-gray-100 dark:bg-gray-800 text-text-primary p-3 px-4 shadow-sm"
+                                                ? `user-bubble inline-block p-3 px-4 shadow-sm ${isPremium ? 'bg-amber-500 text-white' : 'bg-accent-primary text-white'}`
                                                 : "ai-message-container py-1 text-text-primary"
                                                 }`}
                                         >
