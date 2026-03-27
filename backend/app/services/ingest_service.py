@@ -50,6 +50,8 @@ class IngestService:
                 elif suffix.lower() == ".txt":
                     loader = TextLoader(tmp_path, encoding="utf-8")
                     documents = loader.load()
+                elif suffix.lower() == ".xlsx":
+                    return self._extract_xlsx_text(tmp_path)
                 else:
                    raise ValueError(f"Unsupported file type: {suffix}")
 
@@ -124,6 +126,10 @@ class IngestService:
                 elif suffix.lower() == ".txt":
                     loader = TextLoader(tmp_path, encoding="utf-8")
                     documents = loader.load()
+                elif suffix.lower() == ".xlsx":
+                    from langchain_core.documents import Document
+                    text = self._extract_xlsx_text(tmp_path)
+                    documents = [Document(page_content=text, metadata={"source": file.filename})]
                 else:
                     # For images, we would use a Vision model here.
                     # For now, we skip unsupported types or implement image handling later.
@@ -165,5 +171,45 @@ class IngestService:
         except Exception as e:
             logger.error(f"Error processing file {file.filename}: {e}")
             raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
+
+    def _extract_xlsx_text(self, file_path: str) -> str:
+        """
+        Extract text from an Excel file using openpyxl.
+        Converts each row into a descriptive string.
+        """
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(file_path, data_only=True)
+            all_text = []
+            for sheet_name in wb.sheetnames:
+                sheet = wb[sheet_name]
+                all_text.append(f"Sheet: {sheet_name}")
+                
+                # Get column names from the first row
+                headers = []
+                try:
+                    first_row = next(sheet.iter_rows(min_row=1, max_row=1))
+                    headers = [str(cell.value) if cell.value is not None else "" for cell in first_row]
+                except StopIteration:
+                    continue
+                
+                # Iterate rows starting from second
+                for row in sheet.iter_rows(min_row=2):
+                    row_parts = []
+                    for col_idx, cell in enumerate(row):
+                        val = cell.value
+                        if val is not None:
+                            header = headers[col_idx] if col_idx < len(headers) and headers[col_idx] else f"Col{col_idx+1}"
+                            str_val = str(val).strip()
+                            if str_val:
+                                row_parts.append(f"{header}: {str_val}")
+                    
+                    if row_parts:
+                        all_text.append(", ".join(row_parts))
+            
+            return "\n\n".join(all_text)
+        except Exception as e:
+            logger.error(f"Error reading Excel file: {e}")
+            raise ValueError(f"Could not read Excel file: {str(e)}")
 
 ingest_service = IngestService()

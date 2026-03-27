@@ -21,3 +21,4 @@ langchain-groq
 python-multipart
 python-docx
 flashrank
+openpyxl

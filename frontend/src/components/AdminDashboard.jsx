@@ -687,7 +687,7 @@ const AdminDashboard = () => {
             <div className="bg-bg-secondary rounded-xl p-6 border border-border-primary shadow-sm mt-6">
                 <h3 className="text-lg font-semibold text-text-primary mb-4">Knowledge Base Management</h3>
                 <p className="text-text-secondary text-sm mb-4">
-                    Upload official documents (PDF, DOCX, TXT) to the Qdrant vector database.
+                    Upload official documents (PDF, DOCX, TXT, XLSX) to the Qdrant vector database.
                     The AI will immediately be able to use this information to answer user queries.
                 </p>
 
@@ -696,7 +696,7 @@ const AdminDashboard = () => {
                         <input
                             type="file"
                             id="file-upload"
-                            accept=".pdf,.docx,.txt"
+                            accept=".pdf,.docx,.txt,.xlsx"
                             onChange={handleFileChange}
                             className="block w-full text-sm text-text-secondary
                                     file:mr-4 file:py-2 file:px-4
@@ -707,7 +707,7 @@ const AdminDashboard = () => {
                                     cursor-pointer"
                         />
                         <p className="text-xs text-text-secondary mt-2">
-                            Supported formats: PDF, DOCX, TXT. Max size: 10MB.
+                            Supported formats: PDF, DOCX, TXT, XLSX. Max size: 10MB.
                         </p>
                     </div>
 
