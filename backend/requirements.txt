@@ -1,6 +1,7 @@
 fastapi
 uvicorn
 pydantic
+supabase
 langchain
 langchain-community
 python-dotenv
