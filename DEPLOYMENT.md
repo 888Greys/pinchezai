@@ -11,32 +11,28 @@ This project now has a production-oriented Docker setup separate from the local 
 
 ## Required secrets
 
-Set these in `backend/.env` on the server:
+Use a single root `.env` file based on `.env.prod.example`.
 
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_KEY`
 - `GOOGLE_API_KEY` or the active LLM provider key
-- `QDRANT_API_KEY` if you use Qdrant Cloud
+- `QDRANT_URL` or `QDRANT_CLOUD_URL`
+- `QDRANT_API_KEY` or `QDRANT_CLOUD_API_KEY`
 - `DEFAULT_LLM`
-
-Set these in a root `.env` file based on `.env.prod.example`:
-
 - `VITE_API_URL`
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 - `ALLOWED_ORIGINS`
-- `QDRANT_URL`
 
 ## Start
 
 ```bash
 cp .env.prod.example .env
-cp backend/.env.example backend/.env
 docker compose --env-file .env -f docker-compose.prod.yml up --build -d
 ```
 
-The frontend will be exposed on port `8080`, backend on `8000`, and Qdrant on `6333`.
+The frontend will be exposed on port `8080` and backend on `8000`.
 
 ## Reverse proxy
 
@@ -54,4 +50,9 @@ Set:
 
 - Keep the existing `docker-compose.yml` for development.
 - The frontend requires Supabase env vars at build time.
-- If you already use Qdrant Cloud, point `QDRANT_URL` there and remove the local `qdrant` service if desired.
+- The backend accepts either `QDRANT_URL` or `QDRANT_CLOUD_URL`.
+- If you want a local Qdrant container instead of Qdrant Cloud, start it with:
+
+```bash
+docker compose --env-file .env -f docker-compose.prod.yml --profile local-qdrant up --build -d
+```

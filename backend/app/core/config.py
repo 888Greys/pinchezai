@@ -2,8 +2,8 @@ import os
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    QDRANT_URL: str = os.getenv("QDRANT_URL", "http://localhost:6333")
-    QDRANT_API_KEY: str = os.getenv("QDRANT_API_KEY", "")
+    QDRANT_URL: str = os.getenv("QDRANT_URL") or os.getenv("QDRANT_CLOUD_URL", "http://localhost:6333")
+    QDRANT_API_KEY: str = os.getenv("QDRANT_API_KEY") or os.getenv("QDRANT_CLOUD_API_KEY", "")
     QDRANT_CLOUD_URL: str = os.getenv("QDRANT_CLOUD_URL", "")
     QDRANT_CLOUD_API_KEY: str = os.getenv("QDRANT_CLOUD_API_KEY", "")
     COLLECTION_NAME: str = "kca_documents"
