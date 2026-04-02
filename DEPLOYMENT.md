@@ -32,14 +32,16 @@ cp .env.prod.example .env
 docker compose --env-file .env -f docker-compose.prod.yml up --build -d
 ```
 
-The frontend will be exposed on port `8080` and backend on `8000`.
+The frontend will be exposed on port `18080` and backend on `18000` by default.
+Local Qdrant binds to `16333` when you start the `local-qdrant` profile.
+You can override these with `FRONTEND_PORT`, `BACKEND_PORT`, and `QDRANT_PORT` in `.env`.
 
 ## Reverse proxy
 
 Put Nginx, Caddy, or your edge proxy in front of:
 
-- `app.your-domain` -> `http://server-ip:8080`
-- `api.your-domain` -> `http://server-ip:8000`
+- `app.your-domain` -> `http://server-ip:18080`
+- `api.your-domain` -> `http://server-ip:18000`
 
 Set:
 
